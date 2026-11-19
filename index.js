@@ -19,80 +19,51 @@ const client = new MongoClient(uri, {
     }
 });
 
+const userCollection = client.db('simpleCrud').collection('users');
+
 app.get('/', (req, res) => {
     res.send('Hello from simple crud server !!!!');
 });
 
-const run = async () => {
-    try {
-        await client.connect();
+app.get('/users', async (req, res) => {
+    const result = await userCollection.find().toArray();
+    res.send(result);
+});
 
-        const db = client.db('simpleCrud');
-        const userCollection = db.collection('users');
+app.get('/users/:id', async (req, res) => {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+    const user = await userCollection.findOne(query);
+    res.send(user);
+});
 
-        app.get('/users', async(req, res)=>{
-            const cursor = userCollection.find();
-            const result =await cursor.toArray();
-            res.send(result);
-        });
+app.post('/users', async (req, res) => {
+    const newUser = req.body;
+    const result = await userCollection.insertOne(newUser);
+    res.send(result);
+});
 
-        app.get('/users/:id', async(req, res)=>{
-            const id = req.params.id;
-            console.log('user id', id);
-            const query = {
-                _id: new ObjectId(id)
-            }
-            const user = await userCollection.findOne(query);
-            console.log(req.params);
-            res.send(user);
-        })
-
-        app.post('/users', async(req,res)=>{
-            const newUser = req.body;
-            console.log('user to be inserted', newUser);
-            const result = await userCollection.insertOne(newUser);
-            
-            res.send(result);
-        })
-
-        app.patch('/users/:id', async (req, res) => {
-        const id = req.params.id;
-        const filter = { _id: new ObjectId(id) };
-        const modifiedUser = req.body;
-        const updateDocument = {
+app.patch('/users/:id', async (req, res) => {
+    const id = req.params.id;
+    const filter = { _id: new ObjectId(id) };
+    const modifiedUser = req.body;
+    const updateDocument = {
         $set: {
             name: modifiedUser.name,
             email: modifiedUser.email,
             role: modifiedUser.role,
         },
     };
-
     const result = await userCollection.updateOne(filter, updateDocument);
     res.send(result);
-        });
+});
 
-        app.delete('/users/:id', async (req,res) =>{
-            const id = req.params.id;
-            const query ={
-                _id : new ObjectId(id)
-            }
-            const result = await userCollection.deleteOne(query);
-            res.send(result);
-        })
-
-
-        await client.db('admin').command({ ping: 1 });
-
-        console.log(
-            "Pinged your deployment. You successfully connected to MongoDB"
-        );
-    }
-    finally {
-        // await client.close();
-    }
-};
-
-run().catch(console.dir);
+app.delete('/users/:id', async (req, res) => {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+    const result = await userCollection.deleteOne(query);
+    res.send(result);
+});
 
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
